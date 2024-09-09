@@ -74,6 +74,139 @@ def tratar_data_assinatura(df, coluna):
 
     return df
 
+def substituir_cursos(campo):
+    # Dicionário de substituições específicas
+    substituicoes = {
+        'adimnistração': 'administração',
+        'admiração': 'administração',
+        'admiistração': 'administração',
+        'admininstração': 'administração',
+        'adminisração ': 'administração',
+        'administracao': 'administração',
+        'administracso': 'administração',
+        'administrador': 'administração',
+        'administrativo': 'administração',
+        'adminitstração': 'administração',
+        'adminsitração': 'administração',
+        'adminstração': 'administração',
+        'admistração': 'administração',
+        'admnistração': 'administração',
+        'advocacia': 'direito',
+        'advogado': 'direito',
+        'analise': 'análise',
+        'desnvolvimento': 'desenvolvimento',
+        'analises': 'análise',
+        'analista': 'análise',
+        'arquitetura': 'arquitetura e urbanismo',
+        'assistente': 'assistência',
+        'bacharéu': 'bacharel',
+        'baichareu ': 'bacharel',
+        'biomédica': 'biomedicina',
+        'biomedico': 'biomedicina',
+        'c. contabeis': 'ciências contábeis',
+        'ciência contábeis': 'ciências contábeis',
+        'ciência contábil': 'ciências contábeis',
+        'ciências computação': 'ciências da computação',
+        'ciencias': 'ciências',
+        'ciências contábil': 'ciências contábeis',
+        'contabeis': 'ciências contábeis',
+        'contábeis': 'ciências contábeis',
+        'contabilidade': 'ciências contábeis',
+        'designer': 'design',
+        'dreito': 'direito',
+        'ed. fisica': 'educação física',
+        'fisica': 'física',
+        'eletronica': 'eletrônica',
+        'eletrotecnica': 'eletrotécnica',
+        'logistica': 'logística',
+        'enfenharia': 'engenharia',
+        'enfermeira': 'enfermagem',
+        'enfermeiro': 'enfermagem',
+        'eléctrica': 'elétrica',
+        'eletrica': 'elétrica',
+        'mec^nica': 'mecânica',
+        'mecanica': 'mecânica',
+        'quimica': 'química',
+        'telecom': 'telecomunicações',
+        'engenhariamecânica': 'engenharia mecânica',
+        'engenharias': 'engenharia',
+        'engenheira': 'engenharia',
+        'engenheiro': 'engenharia',
+        'engenheria': 'engenharia',
+        'engenhria': 'engenharia',
+        'enhenharia': 'engenharia',
+        'eonomia': 'economia',
+        'estatistica': 'estatística',
+        'farmacêutico': 'farmácia',
+        'farmacia': 'farmácia',
+        'fisioterapeuta': 'fisioterapia',
+        'gestao': 'gestão',
+        'financeiro': 'financeira',
+        'hopitalar': 'hospitalar',
+        'juridica': 'jurídica',
+        'negocios': 'negócios',
+        'industria': 'indústria',
+        'publica': 'pública',
+        'historia': 'história',
+        'pdicopedagogia': 'pedagogia',
+        'histório': 'história',
+        'informatica': 'informática',
+        'licenciatrua': 'licenciatura',
+        'maeketing': 'marketing',
+        'markting': 'marketing',
+        'matematica': 'matemática',
+        'musica': 'música',
+        'odonto': 'odontologia',
+        'paicologia': 'psicologia',
+        'pedagogiq': 'pedagogia',
+        'pedagogo': 'pedagogia',
+        'pegagogia': 'pedagogia',
+        'processa': 'processamento',
+        'processo': 'processos',
+        'psicóloga': 'psicologia',
+        'redes computador': 'redes de computadores',
+        'internacinais': 'internacionais',
+        'sistema': 'sistemas',
+        'sistemas da informação': 'sistemas de informação',
+        'informacao': 'informação',
+        'infirmacao': 'informação',
+        'químico': 'química',
+        'computador': 'computadores',
+        'turiemo': 'turismo',
+        'turismóloga': 'turismo',
+        'turismólogo': 'turismo'
+    }
+
+    # Substituir os termos específicos
+    for chave, valor in substituicoes.items():
+        campo = re.sub(r'\b' + re.escape(chave) + r'\b', valor, campo, flags=re.IGNORECASE)
+
+    # Substituir siglas apenas se estiverem isoladas
+    siglas = {
+        'adm': 'administração',
+        'adm.': 'administração',
+        'administ': 'administração',
+        'ads': 'análise e desenvolvimento de sistemas',
+        'cce': 'ciências contábeis e econômicas',
+        'ed': 'educação',
+        'tic': 'tecnologia da informação e comunicação',
+        'biom': 'biomedicina',
+        'des': 'design',
+        'eng': 'engenharia',
+        'fisiot': 'fisioterapia',
+        'mat': 'matemática',
+        'rede': 'redes',
+        'mkt': 'marketing',
+        'rh': 'recursos humanos',
+        'ti': 'tecnologia da informação'
+    }
+
+    for sigla, substituto in siglas.items():
+        campo = re.sub(r'\b' + re.escape(sigla) + r'\b', substituto, campo, flags=re.IGNORECASE)
+
+    return campo
+
+
 def extract_transform_gcs(**kwargs):
     try:
         # URLs dos arquivos CSV no bucket do GCS
@@ -169,15 +302,52 @@ def transform_data(**kwargs):
     df_processo = df_processo.replace('undefined', None)
 
     # Padronizar campos textuais
-    colunas_para_padronizar = ['estaEmpregado', 'cursoFormacao', 'cidade', 'bairro', 'logradouro', 'statusInscricao',  'chapaEmbraer', 'liderancaEmbraer']
+    colunas_para_padronizar = ['estaEmpregado', 'cursoFormacao', 'cidade', 'bairro', 'logradouro', 'statusInscricao',  'chapaEmbraer', 'liderancaEmbraer', 'nome2']
     df_processo[colunas_para_padronizar] = df_processo[colunas_para_padronizar].apply(lambda x: x.str.lower().str.title())
+
+    #Ajustando orgão expeditor
+    df_processo['orgaoExpedidor'] = df_processo['orgaoExpedidor'].str.upper()
+
+    #EstaEmpregado
+    # Padronizar os valores para minúsculas e remover espaços extras
+    df_processo['estaEmpregado'] = df_processo['estaEmpregado'].str.strip().str.lower()
+    # Substituir valores diferentes de 'sim' ou 'não' por None
+    df_processo['estaEmpregado'] = df_processo['estaEmpregado'].apply(lambda x: x if x in ['sim', 'nao'] else None)
+    # Capitalizar o estaEmpregado corretamente
+    df_processo['estaEmpregado'] = df_processo['estaEmpregado'].str.capitalize()
+
+    #País
+    # Normalizar o campo 'país' para converter variações de Brasil
+    df_processo['pais'] = df_processo['pais'].str.strip().str.lower()
+    # Substituir variações de Brasil por 'Brasil'
+    df_processo['pais'] = df_processo['pais'].replace({
+        'brazil': 'brasil',
+        'brasilien': 'brasil',
+        'analitypress@gmail.com': 'Não informado',
+        'dario.aqn@gmail.com': 'Não informado',
+    })
+    # Capitalizar o nome do país corretamente
+    df_processo['pais'] = df_processo['pais'].str.capitalize()
+
+    #cursoFormacao
+    df_processo['cursoFormacao'] = df_processo['cursoFormacao'].fillna('Não informado')
+    # Normalizar o campo 'cursoFormacao' para converter variações de Administração
+    df_processo['cursoFormacao'] = df_processo['cursoFormacao'].str.strip().str.lower()
+    df_processo['cursoFormacao'] = df_processo['cursoFormacao'].apply(substituir_cursos)
+    #Capitalizar o nome do curso corretamente
+    df_processo['cursoFormacao'] = df_processo['cursoFormacao'].str.title()
 
     # Ajustar campo CEP
     df_processo['cep'] = df_processo['cep'].apply(lambda x: str(int(x)).zfill(8))
 
+    #Campos Date
     colunas_datas = ['dataNascimento', 'dataExpedicao', 'dataInscricao']
     # Primeiro verificamos a validade das datas e depois convertemos para o formato datetime
     df_processo = converter_para_datetime(df_processo, colunas_datas)
+
+    #Campos DateTime
+    #Removendo a vírgula dos campos de dataAssinaturaDistrato
+    df_processo['dataAssinaturaDistrato'] = df_processo['dataAssinaturaDistrato'].str.replace(',', '')
     df_processo = tratar_data_assinatura(df_processo, 'dataAssinaturaDistrato')
 
     tmp_csv_path_processo = '/tmp/arquivo_processo.csv'
