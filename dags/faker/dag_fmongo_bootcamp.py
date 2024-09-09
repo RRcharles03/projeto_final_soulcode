@@ -35,7 +35,7 @@ def extract_transform_mongo(**kwargs):
         df_bootcamp.reset_index(drop=True, inplace=True)
 
         # Salvar o DataFrame como CSV no Bucket do GCS
-        tmp_csv_path = '/tmp/arquivo_processado.csv'
+        tmp_csv_path = '/tmp/arquivo_bootcamp.csv'
         df_bootcamp.to_csv(tmp_csv_path, index=False)
 
 
@@ -55,7 +55,7 @@ def upload_to_bigquery(**kwargs):
         return
 
     client = bigquery.Client()
-    table_id = 'eastern-robot-428113-c6.soulcode_projetofinal.bootcamp'
+    table_id = 'arcane-force-428113-v6.soulcode_projetofinal.bootcamp'
 
     job_config = bigquery.LoadJobConfig(
         schema=[

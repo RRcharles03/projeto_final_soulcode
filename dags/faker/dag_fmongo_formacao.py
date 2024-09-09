@@ -29,71 +29,9 @@ def extract_transform_mongo(**kwargs):
         else:
             df_formacao = pd.DataFrame(formacao_Mongo)
 
-        # inserir o tratamento dos dados
-
-        # Padrões de substituição mapeando caracteres errados para os corretos
-        padroes_substituicoes = {
-            r'Ã§': 'ç',
-            r'Ã©': 'é',
-            r'Ã¢': 'â',
-            r'Ã³': 'ó',
-            r'Ã£': 'ã',
-            r'Ã': 'í',
-            r'Ã¡': 'á',
-            r'Ãª': 'ê',
-            r'Ã­': 'í',
-            r'íº': 'ú',
-            r'ã³': 'ó',
-            r'ã©': 'é',
-            r'ã§': 'ç',
-            r'ã£': 'ã',
-            r'ã±': 'ñ',
-            r'ã´': 'ô',
-            r'ãš': 'Ú',
-            r'ãœ': 'ü',
-            r'íª': 'ê',
-            r'í´': 'ô',
-            r'í¡': 'á',
-            r'íµ': 'õ'
-        }
-
-        # Função para aplicar as substituições usando expressões regulares
-        def corrigir_texto(texto):
-            if isinstance(texto, list):
-                return [corrigir_texto(item) for item in texto]
-            elif isinstance(texto, str):
-                for erro, correto in padroes_substituicoes.items():
-                    texto = re.sub(erro, correto, texto)
-                return texto
-            else:
-                return texto
-
-        # Função para normalizar capitalização e preencher valores nulos
-        def tratar_coluna(coluna):
-            coluna = coluna.apply(corrigir_texto)
-            coluna = coluna.str.lower()
-            coluna = coluna.str.title()
-            return coluna.fillna('Não Informado')
-
-        # Lista de colunas para tratar
-        colunas_para_tratar = ['status', 'curso', 'instituicao', 'areaFormacao']
-
-        # Aplicar o tratamento em todas as colunas da lista
-        df_formacao[colunas_para_tratar] = df_formacao[colunas_para_tratar].apply(tratar_coluna)
-
-        # Converter as colunas dataInicio e dataTermino para datetime, mantendo o formato dia/mês/ano
-        df_formacao['dataInicio'] = pd.to_datetime(df_formacao['dataInicio'], format='%Y/%m/%d', errors='coerce')
-        df_formacao['dataTermino'] = pd.to_datetime(df_formacao['dataTermino'], format='%Y/%m/%d', errors='coerce')
-
-        # Verifica se existe _id proveniente do mongo, caso positivo o mesmo e descartado.
-        if '_id' in df_formacao.columns:
-            df_formacao.drop(columns=['_id'], inplace=True)
-        df_formacao.reset_index(drop=True, inplace=True)
-
         # Salvar o DataFrame como CSV no Bucket do GCS
-        tmp_csv_path = '/tmp/arquivo_processado.csv'
-        df_formacao.to_csv(tmp_csv_path, index=False)
-
+        tmp_csv_path = '/tmp/arquivo_formacao.csv'
+        df_formacao.to_csv(tmp_csv_path, encoding = 'utf-8', index=False)
 
         # Armazenar o caminho do arquivo no contexto do Airflow para uso na próxima tarefa
         kwargs['ti'].xcom_push(key='tmp_csv_path', value=tmp_csv_path)
@@ -101,6 +39,66 @@ def extract_transform_mongo(**kwargs):
     except Exception as e :
         print(f"Erro ao extrair e tratar os dados: {e}")
         return None
+
+# Função para tratar os dados e transformar em DataFrame
+def transform_data(**kwargs):
+    tmp_csv_path = kwargs['ti'].xcom_pull(key='tmp_csv_path', task_ids='extract_transform_mongo')
+
+    if not tmp_csv_path or not os.path.exists(tmp_csv_path):
+        raise FileNotFoundError("O arquivo CSV não foi encontrado. Cancelando o envio para o BigQuery.")
+
+    # Corrigir: Carregar o CSV corretamente
+    df_formacao = pd.read_csv(tmp_csv_path)
+
+    # Padrões de substituição mapeando caracteres errados para os corretos
+    padroes_substituicoes = {
+        r'Ã§': 'ç', r'Ã©': 'é', r'Ã¢': 'â', r'Ã³': 'ó', r'Ã£': 'ã', r'Ã': 'í',
+        r'Ã¡': 'á', r'Ãª': 'ê', r'Ã­': 'í', r'íº': 'ú', r'ã³': 'ó', r'ã©': 'é',
+        r'ã§': 'ç', r'ã£': 'ã', r'ã±': 'ñ', r'ã´': 'ô', r'ãš': 'Ú', r'ãœ': 'ü',
+        r'íª': 'ê', r'í´': 'ô', r'í¡': 'á', r'íµ': 'õ'
+    }
+
+    # Função para aplicar as substituições usando expressões regulares
+    def corrigir_texto(texto):
+        if isinstance(texto, list):
+            return [corrigir_texto(item) for item in texto]
+        elif isinstance(texto, str):
+            for erro, correto in padroes_substituicoes.items():
+                texto = re.sub(erro, correto, texto)
+            return texto
+        else:
+            return texto
+
+    # Função para normalizar capitalização e preencher valores nulos
+    def tratar_coluna(coluna):
+        coluna = coluna.apply(corrigir_texto)
+        coluna = coluna.str.lower().str.title()
+        return coluna.fillna('Não Informado')
+
+    # Lista de colunas para tratar
+    colunas_para_tratar = ['status', 'curso', 'instituicao', 'areaFormacao']
+
+    # Aplicar o tratamento em todas as colunas da lista
+    df_formacao[colunas_para_tratar] = df_formacao[colunas_para_tratar].apply(tratar_coluna)
+
+     # Ajustar a data para incluir hora padrão
+    df_formacao['dataInicio'] = pd.to_datetime(df_formacao['dataInicio'], errors='coerce')
+    df_formacao['dataTermino'] = pd.to_datetime(df_formacao['dataTermino'], errors='coerce')
+
+    # Adicionar hora padrão '00:00:00' para datas sem hora
+    df_formacao['dataInicio'] = df_formacao['dataInicio'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if pd.notnull(x) else None)
+    df_formacao['dataTermino'] = df_formacao['dataTermino'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if pd.notnull(x) else None)
+
+    # Verifica se existe _id proveniente do mongo, caso positivo o mesmo é descartado
+    if '_id' in df_formacao.columns:
+        df_formacao.drop(columns=['_id'], inplace=True)
+    df_formacao.reset_index(drop=True, inplace=True)
+
+    # Salvar o DataFrame como CSV no Bucket do GCS
+    df_formacao.to_csv(tmp_csv_path, index=False)
+
+    # Armazena o DataFrame em XCom para a próxima etapa
+    kwargs['ti'].xcom_push(key='tmp_csv_path', value=tmp_csv_path)
 
 def upload_to_bigquery(**kwargs):
     # Recuperar o caminho do arquivo CSV do XCom
@@ -111,7 +109,7 @@ def upload_to_bigquery(**kwargs):
         return
 
     client = bigquery.Client()
-    table_id = 'eastern-robot-428113-c6.soulcode_projetofinal.formacao'
+    table_id = 'arcane-force-428113-v6.soulcode_projetofinal.formacao'
 
     job_config = bigquery.LoadJobConfig(
         schema=[
@@ -159,9 +157,14 @@ with DAG(
         python_callable=extract_transform_mongo,
     )
 
+    transform_data = PythonOperator(
+        task_id='transform_data',
+        python_callable=transform_data,
+    )
+
     upload_bq_task = PythonOperator(
         task_id='upload_to_bigquery',
         python_callable=upload_to_bigquery,
     )
 
-    extract_transform_mongo >> upload_bq_task
+    extract_transform_mongo >> transform_data >> upload_bq_task

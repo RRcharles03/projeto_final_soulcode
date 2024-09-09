@@ -41,16 +41,18 @@ def extract_transform_mongo(**kwargs):
         # Aplicando a função ao dataframe
         df_estudante = tratar_documentos(df_estudante, colunas_para_tratar)
 
-        # Converter as colunas dataNascimento para datetime, mantendo o formato dia/mês/ano
-        df_estudante['dataNascimento'] = pd.to_datetime(df_estudante['dataNascimento'], format='%Y/%m/%d', errors='coerce')
+        df_estudante['dataNascimento'] = pd.to_datetime(df_estudante['dataNascimento'], errors='coerce')
+
+        # Adicionar hora padrão '00:00:00' para datas sem hora
+        df_estudante['dataNascimento'] = df_estudante['dataNascimento'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if pd.notnull(x) else None)
 
         if '_id' in df_estudante.columns:
             df_estudante.drop(columns=['_id'], inplace=True)
         df_estudante.reset_index(drop=True, inplace=True)
 
         # Salvar o DataFrame como CSV no Bucket do GCS
-        tmp_csv_path = '/tmp/arquivo_processado.csv'
-        df_estudante.to_csv(tmp_csv_path, index=False)
+        tmp_csv_path = '/tmp/arquivo_estudante.csv'
+        df_estudante.to_csv(tmp_csv_path, encoding = 'utf-8', index=False)
 
 
         # Armazenar o caminho do arquivo no contexto do Airflow para uso na próxima tarefa
@@ -69,7 +71,7 @@ def upload_to_bigquery(**kwargs):
         return
 
     client = bigquery.Client()
-    table_id = 'eastern-robot-428113-c6.soulcode_projetofinal.estudante'
+    table_id = 'arcane-force-428113-v6.soulcode_projetofinal.estudante'
 
     job_config = bigquery.LoadJobConfig(
         schema=[
@@ -78,9 +80,10 @@ def upload_to_bigquery(**kwargs):
             bigquery.SchemaField("IdNotas", "STRING"),
             bigquery.SchemaField("IdBootcamp", "STRING"),
             bigquery.SchemaField("nome", "STRING"),
+            bigquery.SchemaField("nacionalidade", "STRING"),
             bigquery.SchemaField("foto", "STRING"),
             bigquery.SchemaField("statusEmpregabilidade", "STRING"),
-            bigquery.SchemaField("astatusNoBootcamp", "STRING"),
+            bigquery.SchemaField("statusNoBootcamp", "STRING"),
             bigquery.SchemaField("cidade ", "STRING"),
             bigquery.SchemaField("escolaridade", "STRING"),
             bigquery.SchemaField("cep", "STRING"),
