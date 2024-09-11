@@ -11,7 +11,7 @@ def read_from_mongo():
     # Conectar ao MongoDB
     client = pymongo.MongoClient('mongodb+srv://teste:a1b2c3@bc26.amljwv1.mongodb.net/?retryWrites=true&w=majority&appName=BC26')
     db = client['bases']
-    colecao = db.aula1
+    colecao = db['aula1']
 
     df_Empregabilidade_Mongo = list(colecao.find({}, {"empregabilidadeUpdateBy": 1, "id": 1, "_id": 0}))
     df_Empregabilidade = pd.DataFrame(df_Empregabilidade_Mongo)

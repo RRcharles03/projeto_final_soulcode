@@ -14,7 +14,7 @@ def read_from_mongo(**kwargs):
         # Conectar ao MongoDB
         client = pymongo.MongoClient('mongodb+srv://teste:a1b2c3@bc26.amljwv1.mongodb.net/?retryWrites=true&w=majority&appName=BC26')
         db = client['bases']
-        colecao = db.aula1
+        colecao = db['aula1']
 
         # Ler os dados do MongoDB
         Notas_Mongo = list(colecao.find({}, {"notas": 1, "id": 1,  "_id": 0}))

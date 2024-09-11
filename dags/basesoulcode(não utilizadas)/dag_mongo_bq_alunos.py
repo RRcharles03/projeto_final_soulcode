@@ -17,7 +17,7 @@ def normalizar_data(data):
     try:
         # Converter o valor para datetime e extrair apenas a data
         return pd.to_datetime(data).strftime('%Y-%m-%d')
-     except:
+    except:
         return None  # Se houver erro, retorna None
 
 # Função para padronizar as datas
@@ -29,7 +29,7 @@ def padronizar_data(data):
             data = data.split(' (')[0]  # Remove a parte da timezone
             parsed_date = parser.parse(data)
             return parsed_date.strftime('%Y-%m-%d')
-         else:
+        else:
             return None  # Se não for string, retorna None
     except (ValueError, TypeError):
         return None  # Retornar None se a data não puder ser parseada

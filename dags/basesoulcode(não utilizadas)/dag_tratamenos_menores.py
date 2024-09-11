@@ -8,11 +8,13 @@ from airflow.operators.python_operator import PythonOperator
 from pymongo import MongoClient
 from google.cloud import bigquery
 
+# Está DAG não será utilizada 
+
 def read_from_mongo():
     # Conectar ao MongoDB
     client = pymongo.MongoClient('mongodb+srv://teste:a1b2c3@bc26.amljwv1.mongodb.net/?retryWrites=true&w=majority&appName=BC26')
     db = client['bases']
-    colecao = db.aula1
+    colecao = db['aula1']
 
     # Ler os dados do MongoDB
     df = list(colecao.find())
